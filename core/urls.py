@@ -7,5 +7,7 @@ urlpatterns = [
     path("webhook/whatsapp/", WebhookWhatsapp.as_view(), name="WebhookWhatsapp"),
     path("callback/whatsapp/", WhatsappCallbackView.as_view(), name="WhatsappCallbackView"),
     path("connect-whatsapp", ConnectWhatsapp.as_view(), name="ConnectWhatsapp"),
+
+    
     path("privacy-policy", PrivacyPolicyView.as_view(), name="PrivacyPolicyView"),
 ]

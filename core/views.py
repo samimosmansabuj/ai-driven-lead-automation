@@ -40,7 +40,6 @@ class ConnectWhatsapp(View):
 
 
 class WhatsappCallbackView(View):
-
     def exchange_code_for_token(self, code):
         url = "https://graph.facebook.com/v18.0/oauth/access_token"
         params = {
