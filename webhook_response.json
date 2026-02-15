@@ -1,0 +1,18 @@
+{'object': 'whatsapp_business_account', 'entry': [
+        {'id': '1920986648501972', 'changes': [
+                {'value': {'messaging_product': 'whatsapp', 'metadata': {'display_phone_number': '15551547561', 'phone_number_id': '907695169103284'
+                        }, 'contacts': [
+                            {'profile': {'name': 'Earniko BD'
+                                }, 'wa_id': '8801533125837'
+                            }
+                        ], 'messages': [
+                            {'from': '8801533125837', 'id': 'wamid.HBgNODgwMTUzMzEyNTgzNxUCABIYIEFDOTE3NDVBNjhDRUM5QUY2MzhDRTg4MTVDQjFEN0NBAA==', 'timestamp': '1771099060', 'text': {'body': 'Hi'
+                                }, 'type': 'text'
+                            }
+                        ]
+                    }, 'field': 'messages'
+                }
+            ]
+        }
+    ]
+}

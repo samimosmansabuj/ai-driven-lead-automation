@@ -23,9 +23,9 @@ REDIRECT_URI = os.getenv("REDIRECT_URI")
 
 class ConnectWhatsapp(View):
     def get(self, request):
-        scope = "business_management,whatsapp_business_management,whatsapp_business_messaging"
+        scope = "email,business_management,whatsapp_business_management,whatsapp_business_messaging"
         oauth_url = (
-            "https://www.facebook.com/v18.0/dialog/oauth?"
+            "https://www.facebook.com/v23.0/dialog/oauth?"
             + urllib.parse.urlencode({
                 "client_id": META_APP_ID,
                 "redirect_uri": REDIRECT_URI,
@@ -41,7 +41,7 @@ class ConnectWhatsapp(View):
 
 class WhatsappCallbackView(View):
     def exchange_code_for_token(self, code):
-        url = "https://graph.facebook.com/v18.0/oauth/access_token"
+        url = "https://graph.facebook.com/v23.0/oauth/access_token"
         params = {
             "client_id": META_APP_ID,
             "client_secret": META_APP_SECRET,
@@ -52,7 +52,7 @@ class WhatsappCallbackView(View):
         return response.json()
 
     def get_user_businesses(self, access_token):
-        url = "https://graph.facebook.com/v18.0/me?fields=id,name,accounts,businesses&access_token=" + access_token
+        url = "https://graph.facebook.com/v23.0/me?fields=id,name,accounts,businesses&access_token=" + access_token
         resp = requests.get(url)
         return resp.json().get("businesses", {}).get("data", [])
 
@@ -85,6 +85,7 @@ class WhatsappCallbackView(View):
         businesses = self.get_user_businesses(access_token)
         if not businesses:
             return JsonResponse({"error": "No businesses found"}, status=400)
+        print("businesses: ", businesses)
         business = businesses[0]
         business_id = business["id"]
 
@@ -162,6 +163,63 @@ class WebhookWhatsapp(View):
             print("Webhook error:", str(e))
             return JsonResponse({"error": str(e)}, status=500)
 
+class WebhookWhatsappTest(View):
+    # [15/Feb/2026 06:42:31] "GET /callback/whatsapp?code=AQBwpke-IJecd4aLZCbSUehVhdGuHKc_E2CqktukQB8KsfkllpH6VWyStrHfmyN6oEytmB_6uhyjGbGBZmEk5jYttj8N2Jd3vbQxs8PbngdV31nfKd_k4tvURGfxWICv6a1_jbayrEhXZmT56GaK1DTYhy4JyTJh6xnG6WIpCqscYTmcmdOaC4Dkooli_VQoUKS3QlZxxB9sp1UsjaEo1xdGs7JjZn2Do7NsxgKv7pMxq5CFLd6bl2tIUSIpaInG37yGtiFf3KTPJTJKElvXTnCR-r66xVvljZL1Fb9rGq1VJWdUvMUJ3Ilc-epqWtqQ3OEtLA35nT-EZbTP-yF9y_QKjK9DLnsouXnAntueF5Vhk7u1vbpwbCneb7s_BQReznfoJtWsV7q60-5_OZwyhaIu2tfO1kGwXmJYyZDsfm54mQ HTTP/1.1" 301 0
+    # businesses:  [{'id': '913560831039518', 'name': 'Test Business'}]
+    # send_message_in_whatsapp:  {'messaging_product': 'whatsapp', 'contacts': [{'input': '+8801533125837', 'wa_id': '8801533125837'}], 'messages': [{'id': 'wamid.HBgNODgwMTUzMzEyNTgzNxUCABEYEkRENDlGNjdENTZERDAwQTY2QQA='}]}
+    # [15/Feb/2026 06:42:39] "GET /callback/whatsapp/?code=AQBwpke-IJecd4aLZCbSUehVhdGuHKc_E2CqktukQB8KsfkllpH6VWyStrHfmyN6oEytmB_6uhyjGbGBZmEk5jYttj8N2Jd3vbQxs8PbngdV31nfKd_k4tvURGfxWICv6a1_jbayrEhXZmT56GaK1DTYhy4JyTJh6xnG6WIpCqscYTmcmdOaC4Dkooli_VQoUKS3QlZxxB9sp1UsjaEo1xdGs7JjZn2Do7NsxgKv7pMxq5CFLd6bl2tIUSIpaInG37yGtiFf3KTPJTJKElvXTnCR-r66xVvljZL1Fb9rGq1VJWdUvMUJ3Ilc-epqWtqQ3OEtLA35nT-EZbTP-yF9y_QKjK9DLnsouXnAntueF5Vhk7u1vbpwbCneb7s_BQReznfoJtWsV7q60-5_OZwyhaIu2tfO1kGwXmJYyZDsfm54mQ HTTP/1.1" 200 160
+    # Incoming WhatsApp payload: {'object': 'whatsapp_business_account', 'entry': [{'id': '1920986648501972', 'changes': [{'value': {'messaging_product': 'whatsapp', 'metadata': {'display_phone_number': '15551547561', 'phone_number_id': '907695169103284'}, 'statuses': [{'id': 'wamid.HBgNODgwMTUzMzEyNTgzNxUCABEYEkRENDlGNjdENTZERDAwQTY2QQA=', 'status': 'sent', 'timestamp': '1771116160', 'recipient_id': '8801533125837', 'pricing': {'billable': False, 'pricing_model': 'PMP', 'category': 'service', 'type': 'free_customer_service'}}]}, 'field': 'messages'}]}]}
+    # [15/Feb/2026 06:42:41] "POST /webhook/whatsapp/ HTTP/1.1" 200 28
+    # Incoming WhatsApp payload: {'object': 'whatsapp_business_account', 'entry': [{'id': '1920986648501972', 'changes': [{'value': {'messaging_product': 'whatsapp', 'metadata': {'display_phone_number': '15551547561', 'phone_number_id': '907695169103284'}, 'statuses': [{'id': 'wamid.HBgNODgwMTUzMzEyNTgzNxUCABEYEkRENDlGNjdENTZERDAwQTY2QQA=', 'status': 'delivered', 'timestamp': '1771116162', 'recipient_id': '8801533125837', 'pricing': {'billable': False, 'pricing_model': 'PMP', 'category': 'service', 'type': 'free_customer_service'}}]}, 'field': 'messages'}]}]}
+    # [15/Feb/2026 06:42:43] "POST /webhook/whatsapp/ HTTP/1.1" 200 28
+
+
+
+    def get(self, request, *args, **kwargs):
+        data = {
+            'object': 'whatsapp_business_account',
+            'entry': [
+                {
+                    'id': '1920986648501972',
+                    'changes': [
+                        {
+                            'value': {
+                                'messaging_product': 'whatsapp',
+                                'metadata': {
+                                    'display_phone_number': '15551547561',
+                                    'phone_number_id': '907695169103284'
+                                },
+                                'contacts': [
+                                    {
+                                        'profile': {
+                                            'name': 'Earniko BD'
+                                        },
+                                        'wa_id': '8801533125837'
+                                    }
+                                ],
+                                'messages': [
+                                    {
+                                        'from': '8801533125837',
+                                        'id': 'wamid.HBgNODgwMTUzMzEyNTgzNxUCABIYIEFDOTE3NDVBNjhDRUM5QUY2MzhDRTg4MTVDQjFEN0NBAA==',
+                                        'timestamp': '1771099060',
+                                        'text': {
+                                            'body': 'Hi'
+                                        },
+                                        'type': 'text'
+                                    }
+                                ]
+                            }, 'field': 'messages'
+                        }
+                    ]
+                }
+            ]
+        }
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "OK"
+            }, status=200
+        )
 
 class PrivacyPolicyView(django_view):
     def get(self, request):
