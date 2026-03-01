@@ -38,7 +38,6 @@ class ConnectWhatsapp(View):
             "connect_url": oauth_url
         })
 
-
 class WhatsappCallbackView(View):
     def exchange_code_for_token(self, code):
         url = "https://graph.facebook.com/v23.0/oauth/access_token"
@@ -85,7 +84,6 @@ class WhatsappCallbackView(View):
         businesses = self.get_user_businesses(access_token)
         if not businesses:
             return JsonResponse({"error": "No businesses found"}, status=400)
-        print("businesses: ", businesses)
         business = businesses[0]
         business_id = business["id"]
 
@@ -134,6 +132,38 @@ class WhatsappCallbackView(View):
 
         response = requests.post(url, json=payload, headers=headers)
         return response.json()
+
+class SendMessageView(View):
+    def send_whatsapp_message(self, access_token, phone_number_id, to_number, message_text):
+        url = f"https://graph.facebook.com/v18.0/{phone_number_id}/messages"
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": to_number,
+            "type": "text",
+            "text": {
+                "body": message_text
+            }
+        }
+        response = requests.post(url, json=payload, headers=headers)
+        return response.json()
+    
+    def get(self, request, *args, **kwargs):
+        access_token="EAAdlgerd4JoBQukd1sJYDNUFZAyJL4egVZAP6zS8mZCsvZA1PoZBT12v2WjyJjUBgIGmDIjbCTtxIZCUVADGdyqcbK9ADU5ZArCyQdlvHVadBMaySzZBusSFtqDK1mywLZCrPhpw7DPwXTlcHpW5SfgZBRIewLZA25TS0xwwRFRf7OBIJyJ9dD289T1ELVjZAYphiSLvFsqwZCczTklFN3rGPEzJGwO9cqh5VauZBLhBZALrmCFhwUX3gZBZCiAashiG2MZATj2WhmMk6fIG1bHnWbyAOhfZCL0oZBK0wlyZBJ0wkNK5I"
+        phone_number_id = "907695169103284"
+        to_number = "+8801533125837"
+        print("send using graph message api: ", to_number)
+        send_message_in_whatsapp = self.send_whatsapp_message(access_token, phone_number_id, to_number, "Test Message")
+        print("send_message_in_whatsapp: ", send_message_in_whatsapp)
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "OK"
+            }, status=200
+        )
 
 
 @method_decorator(csrf_exempt, name="dispatch")
