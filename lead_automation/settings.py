@@ -1,18 +1,22 @@
 from pathlib import Path
-BASE_DIR = Path(__file__).resolve().parent.parent
-import os
 from dotenv import load_dotenv
+from datetime import timedelta
+import os
 load_dotenv()
 
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ijcpx42!2ot$5td1h$skcewye6&xi$#e1ni*r&6j^pjw!_o95p'
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+DEBUG = os.getenv('DEBUG', 'False').strip().lower() in ('true', '1', 'yes')
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
 CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+
 
 # Application definition
 INSTALLED_APPS = [
+    # 'channels', 'daphne',
+    # 'django.contrib.sites',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -20,10 +24,68 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'core',
+    # library app
+    'rest_framework', 'rest_framework_simplejwt',
+    'corsheaders', 'django_extensions', 'django_filters',
+    'rest_framework_simplejwt.token_blacklist',
 
-    'rest_framework',
+    # custom app
+    'account', 'billing', 'business', 'core', 'integration', 'lead', 'message_handle', 'notify',
 ]
+
+# ================================================================================
+# ==================== Authentication BackendStart====================
+
+# ==================== Authentication BackendEnd====================
+# ================================================================================
+
+# ================================================================================
+# ==================== Rest Frame Work Configurations Start====================
+ENABLE_BROWSABLE_API = os.getenv('ENABLE_BROWSABLE_API', 'False') == 'True'
+if ENABLE_BROWSABLE_API:
+    DEFAULT_RENDERER_CLASSES_ = [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ]
+else:
+    DEFAULT_RENDERER_CLASSES_ = [
+        'rest_framework.renderers.JSONRenderer'
+    ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': DEFAULT_RENDERER_CLASSES_,
+    
+    'EXCEPTION_HANDLER': 'find_worker_config.exceptions.custom_exception_handler',
+    
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    
+    # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    # 'PAGE_SIZE': 5,
+    
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
+}
+
+SIMPLE_JWT = {
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ROTATE_REFRESH_TOKENS': True,
+    # 'ROTATE_REFRESH_TOKENS': False,
+    
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=60),
+    # 'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=60),
+    
+    "UPDATE_LAST_LOGIN": True,
+}
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+# ==================== Rest Frame Work Configurations End====================
+# ================================================================================
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -86,7 +148,31 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
+# ==========================================================================================
+# =================Static & Media Config================================
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
-STATIC_URL = 'static/'
+MEDIA_URL = 'media/'
+MEDIA_ROOT = os.getenv('MEDIA_ROOT', default=os.path.join(BASE_DIR, 'media'))
+# =================Static & Media Config================================
+# ==========================================================================================
+
+
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+AUTH_USER_MODEL = 'account.User'
+
+
+# default is ~2.5 MB; bump to e.g. 20 MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024
+
+
+
+# ==========================================================================================
+# =================API Extra Security================================
+FRONTEND_APP_KEY=os.getenv("FRONTEND_APP_KEY")
+# =================API Extra Security================================
+# ==========================================================================================
