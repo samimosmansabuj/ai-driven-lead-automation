@@ -15,7 +15,7 @@ CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
 
 # Application definition
 INSTALLED_APPS = [
-    # 'channels', 'daphne',
+    'channels', 'daphne',
     # 'django.contrib.sites',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -115,6 +115,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'lead_automation.wsgi.application'
+ASGI_APPLICATION = "lead_automation.asgi.application"
 
 DATABASES = {
     'default': {
