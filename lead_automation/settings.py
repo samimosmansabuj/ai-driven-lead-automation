@@ -30,7 +30,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
 
     # custom app
-    'account', 'billing', 'business', 'core', 'integration', 'lead', 'message_handle', 'notify',
+    'account', 'billing', 'business', 'core', 'integration', 'lead', 'automation', 'notify',
 ]
 
 # ================================================================================

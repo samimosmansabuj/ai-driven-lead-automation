@@ -23,10 +23,10 @@ class BusinessHours(BaseModel):
     close_time = models.TimeField(null=True, blank=True)
     is_closed = models.BooleanField(default=False)
 
-class TeamInvite(BaseModel):
-    business = models.ForeignKey(Business, on_delete=models.CASCADE)
+class BusinessMember(BaseModel):
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="members")
+    user = models.ForeignKey("account.User", on_delete=models.CASCADE, related_name="memberships")
     email = models.EmailField()
     role = models.CharField(max_length=50)
-    invited_by = models.ForeignKey("account.User", on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=TEAM_INVITE_STATUS.choices, default=TEAM_INVITE_STATUS.PENDING)
 

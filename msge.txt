@@ -1,0 +1,273 @@
+account/models.py:
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+from core.models import BaseModel
+from core.choice_select import USER_TYPE, PROFILE_STATUS, PROFILE_TYPE
+
+class User(AbstractUser):
+    name = models.CharField(max_length=255)
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(unique=True)
+    user_type = models.CharField(max_length=20, choices=USER_TYPE.choices)
+
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
+
+    last_login = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
+class UserProfile(BaseModel):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="user_profile")
+    business = models.ForeignKey('business.Business', on_delete=models.CASCADE, null=True, blank=True, related_name="user_profile")
+
+    profile_type = models.CharField(max_length=20, choices=PROFILE_TYPE.choices)
+    language = models.CharField(max_length=20, default='en')
+    live_chat_notification_sound = models.BooleanField(default=True)
+
+    profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)
+
+    status = models.CharField(max_length=20, choices=PROFILE_STATUS.choices, default=PROFILE_STATUS.ACTIVE)
+    last_seen = models.DateTimeField(null=True, blank=True)
+
+
+
+business/models.py:
+from core.models import BaseModel
+from core.choice_select import BUSINESS_STATUS, BUSINESS_DAY, TEAM_INVITE_STATUS
+from django.db import models
+from django.conf import settings
+
+class Business(BaseModel):
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="business")
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    logo = models.ImageField(upload_to='business/logo/', null=True, blank=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
+
+    meta_business_id = models.CharField(max_length=255, blank=True, null=True)
+    is_verified = models.BooleanField(default=False)
+
+    status = models.CharField(max_length=20, choices=BUSINESS_STATUS.choices, default=BUSINESS_STATUS.ACTIVE)
+    timezone = models.CharField(max_length=100, default='UTC')
+
+class BusinessHours(BaseModel):
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="business_hour")
+    day = models.IntegerField(choices=BUSINESS_DAY.choices)
+    open_time = models.TimeField(null=True, blank=True)
+    close_time = models.TimeField(null=True, blank=True)
+    is_closed = models.BooleanField(default=False)
+
+class TeamInvite(BaseModel):
+    business = models.ForeignKey(Business, on_delete=models.CASCADE)
+    email = models.EmailField()
+    role = models.CharField(max_length=50)
+    invited_by = models.ForeignKey("account.User", on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=TEAM_INVITE_STATUS.choices, default=TEAM_INVITE_STATUS.PENDING)
+
+
+
+
+
+billing/models.py:
+from django.db import models
+from core.models import BaseModel
+from core.choice_select import SUBSCRIPTION_UNIT, PLAN_STATUS, PLAN_FEATURE_STATUS, INVOICE_STATUS
+
+class SubscriptionPlan(BaseModel):
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    unit = models.CharField(max_length=20, choices=SUBSCRIPTION_UNIT.choices)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=PLAN_STATUS.choices, default=PLAN_STATUS.ACTIVE)
+    message_limit = models.IntegerField(default=1000)
+    agent_limit = models.IntegerField(default=1)
+
+class SubscriptionPlanFeature(BaseModel):
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.CASCADE, related_name="plan_feature")
+    name = models.CharField(max_length=255)
+    value = models.CharField(max_length=255, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=PLAN_FEATURE_STATUS.choices, default=PLAN_FEATURE_STATUS.ACTIVE)
+
+class BusinessSubscription(BaseModel):
+    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="subscription", blank=True, null=True)
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, related_name="subscription", blank=True, null=True)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+
+class Invoice(BaseModel):
+    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="invoices", blank=True, null=True)
+    subscription = models.ForeignKey(BusinessSubscription, on_delete=models.SET_NULL, related_name="invoices", blank=True, null=True)
+    invoice_number = models.CharField(max_length=100, unique=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=10, default='USD')
+    status = models.CharField(max_length=20, choices=INVOICE_STATUS.choices, default=INVOICE_STATUS.PENDING)
+    payment_reference = models.CharField(max_length=255, null=True, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+
+
+core/models.py:
+from django.db import models
+
+class BaseModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+
+integration/models.py:
+from core.models import BaseModel
+from django.db import models
+
+class App(BaseModel):
+    name = models.CharField(max_length=255)
+    app_id = models.CharField(max_length=255)
+    app_secret = models.CharField(max_length=255)
+    webhook_verify_token = models.CharField(max_length=255)
+    config = models.JSONField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+
+class WhatsAppAccount(BaseModel):
+    business = models.ForeignKey('business.Business', on_delete=models.CASCADE, related_name="whatsapp_account")
+    waba_id = models.CharField(max_length=255)
+    phone_number_id = models.CharField(max_length=255)
+    display_phone_number = models.CharField(max_length=50)
+
+    access_token = models.TextField()
+    refresh_token = models.TextField(null=True, blank=True)
+    token_expiry = models.DateTimeField(null=True, blank=True)
+
+    is_active = models.BooleanField(default=True)
+    quality_rating = models.CharField(max_length=50, null=True, blank=True)
+    messaging_limit_tier = models.CharField(max_length=50, null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['phone_number_id']),
+            models.Index(fields=['business']),
+        ]
+
+
+
+lead/models.py
+from core.models import BaseModel
+from core.choice_select import MESSAGE_DIRECTION, MESSAGE_TYPE, MESSAGE_STATUS, CONVERSATION_STATUS, CONVERSATION_SOURCE
+from django.db import models
+import uuid
+
+class Lead(BaseModel):
+    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="lead", blank=True, null=True)
+    whatsapp_account = models.ForeignKey('integration.WhatsAppAccount', on_delete=models.SET_NULL, related_name="lead", blank=True, null=True)
+    name = models.CharField(max_length=255, null=True, blank=True)
+    phone_number = models.CharField(max_length=20)
+    profile_pic = models.URLField(null=True, blank=True)
+    is_blocked = models.BooleanField(default=False)
+    last_message_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('business', 'phone_number')
+        indexes = [
+            models.Index(fields=['phone_number']),
+            models.Index(fields=['business', 'phone_number'])
+        ]
+
+class Conversation(BaseModel):
+    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="conversations", blank=True, null=True)
+    whatsapp_account = models.ForeignKey('integration.WhatsAppAccount', on_delete=models.SET_NULL, related_name="conversations", blank=True, null=True)
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="conversations")
+    last_message = models.TextField(null=True, blank=True)
+    last_message_at = models.DateTimeField(null=True, blank=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=CONVERSATION_STATUS.choices, default=CONVERSATION_STATUS.OPEN)
+    source = models.CharField(max_length=20, choices=CONVERSATION_SOURCE.choices, default=CONVERSATION_SOURCE.WHATSAPP)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['business']),
+            models.Index(fields=['last_message_at'])
+        ]
+
+class AgentAssignment(models.Model):
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
+    agent = models.ForeignKey("account.User", on_delete=models.CASCADE)
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, default="active")
+
+class Message(BaseModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="messages", blank=True, null=True)
+    whatsapp_account = models.ForeignKey('integration.WhatsAppAccount', on_delete=models.SET_NULL, related_name="messages", blank=True, null=True)
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="messages")
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
+
+    direction = models.CharField(max_length=20, choices=MESSAGE_DIRECTION.choices)
+    message_type = models.CharField(max_length=50, choices=MESSAGE_TYPE.choices, default=MESSAGE_TYPE.TEXT)
+
+    content = models.TextField(null=True, blank=True)
+    file = models.FileField(upload_to='messages/', null=True, blank=True)
+
+    meta_message_id = models.CharField(max_length=255, null=True, blank=True)
+    status = models.CharField(max_length=50, choices=MESSAGE_STATUS.choices, default=MESSAGE_STATUS.SENT)
+    error_message = models.TextField(null=True, blank=True)
+    timestamp = models.DateTimeField()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['meta_message_id']),
+            models.Index(fields=['conversation', 'timestamp']),
+            models.Index(fields=['business', 'timestamp']),
+            models.Index(fields=['lead']),
+        ]
+
+class MediaFile(BaseModel):
+    message = models.ForeignKey(Message, on_delete=models.CASCADE)
+    media_type = models.CharField(max_length=50)
+    file = models.FileField(upload_to="media/")
+    meta_media_id = models.CharField(max_length=255)
+
+
+class Tag(BaseModel):
+    business = models.ForeignKey('business.Business', on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    color = models.CharField(max_length=100)
+
+class ConversationTag(models.Model):
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+
+
+
+
+message_handle/models.py:
+from django.db import models
+from core.models import BaseModel
+
+class AutomationRule(BaseModel):
+    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="automation_rules", null=True, blank=True)
+    name = models.CharField(max_length=255)
+    trigger_type = models.CharField(max_length=50)
+    trigger_value = models.CharField(max_length=255)
+    response_type = models.CharField(max_length=50)
+    response_content = models.JSONField()
+    is_active = models.BooleanField(default=True)
+
+class MessageQueue(BaseModel):
+    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="message_queue", null=True, blank=True)
+    whatsapp_account = models.ForeignKey('integration.WhatsAppAccount', on_delete=models.SET_NULL, related_name="message_queue", blank=True, null=True)
+    payload = models.JSONField()
+    status = models.CharField(max_length=20, default='pending')
+    retry_count = models.IntegerField(default=0)
+
+
+
+
+notify/models.py

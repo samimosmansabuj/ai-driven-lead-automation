@@ -57,9 +57,10 @@ class Message(BaseModel):
     meta_message_id = models.CharField(max_length=255, null=True, blank=True)
     status = models.CharField(max_length=50, choices=MESSAGE_STATUS.choices, default=MESSAGE_STATUS.SENT)
     error_message = models.TextField(null=True, blank=True)
-    timestamp = models.DateTimeField()
+    timestamp = models.DateTimeField(db_index=True)
 
     class Meta:
+        ordering = ["-timestamp"]
         indexes = [
             models.Index(fields=['meta_message_id']),
             models.Index(fields=['conversation', 'timestamp']),
@@ -68,7 +69,7 @@ class Message(BaseModel):
         ]
 
 class MediaFile(BaseModel):
-    message = models.ForeignKey(Message, on_delete=models.CASCADE)
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name="media_files")
     media_type = models.CharField(max_length=50)
     file = models.FileField(upload_to="media/")
     meta_media_id = models.CharField(max_length=255)
@@ -82,3 +83,6 @@ class Tag(BaseModel):
 class ConversationTag(models.Model):
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ("conversation", "tag")

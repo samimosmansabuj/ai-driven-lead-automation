@@ -5,7 +5,6 @@ from core.choice_select import USER_TYPE, PROFILE_STATUS, PROFILE_TYPE
 
 class User(AbstractUser):
     name = models.CharField(max_length=255)
-    username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
     user_type = models.CharField(max_length=20, choices=USER_TYPE.choices)
 
