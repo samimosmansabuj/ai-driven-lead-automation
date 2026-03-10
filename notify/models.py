@@ -2,18 +2,19 @@ from django.db import models
 from core.models import BaseModel
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-from core.choice_select import AUDIT_LOG_ACTION_TYPE, NOTIFICATION_TYPE
+from core.choice_select import ACTIVITY_LOG_ACTION_TYPE, NOTIFICATION_TYPE
 
-class AuditLog(BaseModel):
+class ActivityLog(BaseModel):
     user = models.ForeignKey("account.User", on_delete=models.SET_NULL, null=True)
     business = models.ForeignKey("business.Business", on_delete=models.SET_NULL, null=True)
 
-    action = models.CharField(max_length=50, choices=AUDIT_LOG_ACTION_TYPE.choices)
+    action = models.CharField(max_length=50, choices=ACTIVITY_LOG_ACTION_TYPE.choices)
     entity_type = models.ForeignKey(ContentType, on_delete=models.SET_NULL, blank=True, null=True)
     entity_id = models.PositiveBigIntegerField(blank=True, null=True)
     service = GenericForeignKey('entity_type', 'entity_id')
     metadata = models.JSONField(default=dict)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
+    need_notify = models.BooleanField(default=False)
 
 class Notification(BaseModel):
     user = models.ForeignKey("account.User", on_delete=models.CASCADE)

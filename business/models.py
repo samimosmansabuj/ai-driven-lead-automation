@@ -1,5 +1,5 @@
 from core.models import BaseModel
-from core.choice_select import BUSINESS_STATUS, BUSINESS_DAY, TEAM_INVITE_STATUS
+from core.choice_select import BUSINESS_STATUS, BUSINESS_DAY, ROLE_TYPE, PROFILE_STATUS
 from django.db import models
 from django.conf import settings
 
@@ -24,9 +24,13 @@ class BusinessHours(BaseModel):
     is_closed = models.BooleanField(default=False)
 
 class BusinessMember(BaseModel):
+    user = models.OneToOneField("account.User", on_delete=models.CASCADE, related_name="memberships")
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="members")
-    user = models.ForeignKey("account.User", on_delete=models.CASCADE, related_name="memberships")
-    email = models.EmailField()
-    role = models.CharField(max_length=50)
-    status = models.CharField(max_length=20, choices=TEAM_INVITE_STATUS.choices, default=TEAM_INVITE_STATUS.PENDING)
+
+    role = models.CharField(max_length=50, default=ROLE_TYPE.ADMIN, choices=ROLE_TYPE.choices)
+    language = models.CharField(max_length=20, default='en')
+    live_chat_notification_sound = models.BooleanField(default=True)
+    profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)
+    status = models.CharField(max_length=20, choices=PROFILE_STATUS.choices, default=PROFILE_STATUS.ACTIVE)
+    last_seen = models.DateTimeField(null=True, blank=True)
 

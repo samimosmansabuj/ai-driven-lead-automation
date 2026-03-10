@@ -28,3 +28,4 @@ class WhatsAppAccount(BaseModel):
             models.Index(fields=['phone_number_id']),
             models.Index(fields=['business']),
         ]
+

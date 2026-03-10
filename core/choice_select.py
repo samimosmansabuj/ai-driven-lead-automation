@@ -1,20 +1,19 @@
 from django.db import models
 
-# Account App-------------------------------
+# Account & Business App-------------------------------
 class USER_TYPE(models.TextChoices):
     ADMIN = "ADMIN"
     CLIENT = "CLIENT"
 
-class PROFILE_TYPE(models.TextChoices):
+class ROLE_TYPE(models.TextChoices):
     ADMIN = "ADMIN"
+    MANAGER = "MANAGER"
     AGENT = "AGENT"
 
 class PROFILE_STATUS(models.TextChoices):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
 
-
-# Business App-------------------------------
 class BUSINESS_STATUS(models.TextChoices):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
@@ -28,10 +27,10 @@ class BUSINESS_DAY(models.TextChoices):
     SIX = "Saturday"
     SEVEN = "Sunday"
 
-class TEAM_INVITE_STATUS(models.TextChoices):
-    PENDING = "Pending"
-    ACTIVE = "Active"
-    INACTIVE = "Inactive"
+
+
+
+
 
 # Subscription App-------------------------------
 class SUBSCRIPTION_UNIT(models.TextChoices):
@@ -90,7 +89,7 @@ class MESSAGE_STATUS(models.TextChoices):
 
 
 # Notify App-------------------------------
-class AUDIT_LOG_ACTION_TYPE(models.TextChoices):
+class ACTIVITY_LOG_ACTION_TYPE(models.TextChoices):
     CREATE = "Create"
     UPDATE = "Update"
     DELETE = "Delete"

@@ -55,7 +55,7 @@ else:
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': DEFAULT_RENDERER_CLASSES_,
     
-    'EXCEPTION_HANDLER': 'find_worker_config.exceptions.custom_exception_handler',
+    'EXCEPTION_HANDLER': 'lead_automation.exceptions.custom_exception_handler',
     
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',

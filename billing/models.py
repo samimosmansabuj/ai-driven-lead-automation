@@ -35,3 +35,4 @@ class Invoice(BaseModel):
     paid_at = models.DateTimeField(null=True, blank=True)
 
 
+
