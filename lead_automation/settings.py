@@ -27,7 +27,7 @@ INSTALLED_APPS = [
     # library app
     'rest_framework', 'rest_framework_simplejwt',
     'corsheaders', 'django_extensions', 'django_filters',
-    'rest_framework_simplejwt.token_blacklist',
+    'rest_framework_simplejwt.token_blacklist', 'django_json_widget',
 
     # custom app
     'account', 'billing', 'business', 'core', 'integration', 'lead', 'automation', 'notify',

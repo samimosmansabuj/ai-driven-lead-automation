@@ -14,6 +14,7 @@ Django==6.0.2
 django-cors-headers==4.9.0
 django-extensions==4.1
 django-filter==25.2
+django-json-widget==2.1.1
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
 hyperlink==21.0.0

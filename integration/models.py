@@ -3,6 +3,7 @@ from django.db import models
 
 class App(BaseModel):
     name = models.CharField(max_length=255)
+    app_title = models.CharField(max_length=255, blank=True, null=True)
     app_id = models.CharField(max_length=255)
     app_secret = models.CharField(max_length=255)
     webhook_verify_token = models.CharField(max_length=255)

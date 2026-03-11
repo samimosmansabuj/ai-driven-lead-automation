@@ -22,12 +22,16 @@ META_APP_SECRET = os.getenv("META_APP_SECRET")
 REDIRECT_URI = os.getenv("REDIRECT_URI")
 
 class ConnectWhatsapp(View):
+    # https://www.facebook.com/v25.0/dialog/oauth?client_id=892882793588514&display=popup&fallback_redirect_uri=https%3A%2F%2Fdevelopers.facebook.com%2Ftools%2Fexplorer%2Fcallback%2F&redirect_uri=https%3A%2F%2Fdevelopers.facebook.com%2Ftools%2Fexplorer%2Fcallback%2F&response_type=token&scope=whatsapp_business_management%2Cwhatsapp_business_messaging
+
+    # https://www.facebook.com/v23.0/dialog/oauth?client_id=2081933502570650&redirect_uri=https%3A%2F%2Fs3x54djx-8080.inc1.devtunnels.ms%2Fcallback%2Fwhatsapp&scope=email%2Cbusiness_management%2Cwhatsapp_business_management%2Cwhatsapp_business_messaging&response_type=code
     def get(self, request):
         scope = "email,business_management,whatsapp_business_management,whatsapp_business_messaging"
         oauth_url = (
             "https://www.facebook.com/v23.0/dialog/oauth?"
             + urllib.parse.urlencode({
                 "client_id": META_APP_ID,
+                "display": "popup",
                 "redirect_uri": REDIRECT_URI,
                 "scope": scope,
                 "response_type": "code"

@@ -16,7 +16,7 @@ class UpdateModelViewSet(ModelViewSet):
     def perform_retrieve(self, serializer):
         return Response(
             {
-                'status': True,
+                'success': True,
                 'data': serializer.data
             }, status=status.HTTP_200_OK
         )
@@ -26,7 +26,7 @@ class UpdateModelViewSet(ModelViewSet):
             response = super().list(request, *args, **kwargs)
             return Response(
                 {
-                    'status': True,
+                    'success': True,
                     'count': len(response.data),
                     'data': response.data
                 }, status=status.HTTP_200_OK
@@ -34,7 +34,7 @@ class UpdateModelViewSet(ModelViewSet):
         except Exception as e:
             return Response(
                 {
-                    'status': False,
+                    'success': False,
                     'messgae': str(e),
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
@@ -46,7 +46,7 @@ class UpdateModelViewSet(ModelViewSet):
             self.perform_create(serializer)
             return Response(
                 {
-                    'status': True,
+                    'success': True,
                     'data': serializer.data
                 }, status=status.HTTP_201_CREATED
             )
@@ -54,21 +54,21 @@ class UpdateModelViewSet(ModelViewSet):
             error = {key: str(value[0]) for key, value in serializer.errors.items()}
             return Response(
                 {
-                    'status': False,
+                    'success': False,
                     'message': error,
                 },status=status.HTTP_400_BAD_REQUEST
             )
         except exceptions.PermissionDenied as e:
             return Response(
                 {
-                    'status': False,
+                    'success': False,
                     'message': str(e),
                 }, status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
             return Response(
                 {
-                    'status': False,
+                    'success': False,
                     'message': str(e),
                 }, status=status.HTTP_400_BAD_REQUEST
             )
@@ -81,7 +81,7 @@ class UpdateModelViewSet(ModelViewSet):
             self.perform_update(serializer)
             return Response(
                 {
-                    'status': True,
+                    'success': True,
                     'data': serializer.data
                 },
                 status=status.HTTP_200_OK
@@ -90,7 +90,7 @@ class UpdateModelViewSet(ModelViewSet):
             error = {key: str(value[0]) for key, value in serializer.errors.items()}
             return Response(
                 {
-                    'status': False,
+                    'success': False,
                     'message': error
                 },
                 status=status.HTTP_400_BAD_REQUEST
@@ -100,7 +100,7 @@ class UpdateModelViewSet(ModelViewSet):
         super().destroy(request, *args, **kwargs)
         return Response(
             {
-                'status': True,
+                'success': True,
                 'message': self.delete_message,
             }, status=status.HTTP_200_OK
         )
