@@ -1,9 +1,10 @@
 from core.models import BaseModel
 from django.db import models
+from core.choice_select import APP_TITLE
 
 class App(BaseModel):
     name = models.CharField(max_length=255)
-    app_title = models.CharField(max_length=255, blank=True, null=True)
+    app_title = models.CharField(max_length=255, choices=APP_TITLE.choices, blank=True, null=True)
     app_id = models.CharField(max_length=255)
     app_secret = models.CharField(max_length=255)
     webhook_verify_token = models.CharField(max_length=255)

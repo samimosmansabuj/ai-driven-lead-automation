@@ -29,7 +29,10 @@ class BUSINESS_DAY(models.TextChoices):
 
 
 
-
+# Integration App-------------------------------
+class APP_TITLE(models.TextChoices):
+    WHATSAPP_CLOUD = "WHATSAPP_CLOUD"
+    MESSANGER = "MESSANGER"
 
 
 # Subscription App-------------------------------
