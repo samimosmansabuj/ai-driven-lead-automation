@@ -13,13 +13,14 @@ class App(BaseModel):
 
 class WhatsAppAccount(BaseModel):
     business = models.ForeignKey('business.Business', on_delete=models.CASCADE, related_name="whatsapp_account")
+    meta_business_id = models.CharField(max_length=255, blank=True, null=True)
     waba_id = models.CharField(max_length=255)
     phone_number_id = models.CharField(max_length=255)
     display_phone_number = models.CharField(max_length=50)
 
-    access_token = models.TextField()
-    refresh_token = models.TextField(null=True, blank=True)
-    token_expiry = models.DateTimeField(null=True, blank=True)
+    access_token = models.JSONField(blank=True, null=True)
+    # refresh_token = models.TextField(null=True, blank=True)
+    # token_expiry = models.DateTimeField(null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
     quality_rating = models.CharField(max_length=50, null=True, blank=True)

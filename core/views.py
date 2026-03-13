@@ -42,7 +42,6 @@ class ConnectWhatsapp(View):
             "connect_url": oauth_url
         })
 
-
 class WhatsappCallbackView(View):
     def exchange_code_for_token(self, code):
         url = "https://graph.facebook.com/v23.0/oauth/access_token"
@@ -81,40 +80,45 @@ class WhatsappCallbackView(View):
         if not code:
             return JsonResponse({"error": "No auth code"}, status=400)
 
-        token_data = self.exchange_code_for_token(code)
+        # token_data = self.exchange_code_for_token(code)
 
-        access_token = token_data.get("access_token")
-        if not access_token:
-            return JsonResponse({"error": "Token exchange failed"}, status=400)
+        # access_token = token_data.get("access_token")
+        # if not access_token:
+        #     return JsonResponse({"error": "Token exchange failed"}, status=400)
 
-        businesses = self.get_user_businesses(access_token)
-        if not businesses:
-            return JsonResponse({"error": "No businesses found"}, status=400)
-        print("businesses: ", businesses)
-        business = businesses[0]
-        business_id = business["id"]
+        # businesses = self.get_user_businesses(access_token)
+        # if not businesses:
+        #     return JsonResponse({"error": "No businesses found"}, status=400)
+        # print("businesses: ", businesses)
+        # business = businesses[0]
+        # business_id = business["id"]
 
-        waba_data = self.get_whatsapp_accounts_for_business(business_id, access_token)
-        if not waba_data:
-            return JsonResponse({"error": "No Whatsapp business accont found"}, status=400)
-        waba_id = waba_data.get("owned_whatsapp_business_accounts", {}).get("data", [])[0].get("id")
-        waba_name = waba_data.get("owned_whatsapp_business_accounts", {}).get("data", [])[0].get("name")
+        # waba_data = self.get_whatsapp_accounts_for_business(business_id, access_token)
+        # if not waba_data:
+        #     return JsonResponse({"error": "No Whatsapp business accont found"}, status=400)
+        # waba_id = waba_data.get("owned_whatsapp_business_accounts", {}).get("data", [])[0].get("id")
+        # waba_name = waba_data.get("owned_whatsapp_business_accounts", {}).get("data", [])[0].get("name")
 
-        phones = self.get_phone_numbers(waba_id, access_token)
-        phone_number = phones[0].get("display_phone_number")
-        phone_number_id = phones[0].get("id")
-        to_number = "+8801533125837"
+        # phones = self.get_phone_numbers(waba_id, access_token)
+        # phone_number = phones[0].get("display_phone_number")
+        # phone_number_id = phones[0].get("id")
+        # to_number = "+8801533125837"
 
-        send_message_in_whatsapp = self.send_whatsapp_message(access_token, phone_number_id, to_number, "Test Message")
-        print("send_message_in_whatsapp: ", send_message_in_whatsapp)
+        # send_message_in_whatsapp = self.send_whatsapp_message(access_token, phone_number_id, to_number, "Test Message")
+        # print("send_message_in_whatsapp: ", send_message_in_whatsapp)
 
-        return JsonResponse({
-            "status": "connected",
-            "business_id": business_id,
-            "waba_id": waba_id,
-            "waba_name": waba_name,
-            "phones": phone_number,
-        })
+        # return JsonResponse({
+        #     "status": "connected",
+        #     "business_id": business_id,
+        #     "waba_id": waba_id,
+        #     "waba_name": waba_name,
+        #     "phones": phone_number,
+        # })
+        return JsonResponse(
+            {
+                "code": code
+            }
+        )
     
     def send_whatsapp_message(self, access_token, phone_number_id, to_number, message_text):
         url = f"https://graph.facebook.com/v18.0/{phone_number_id}/messages"

@@ -22,6 +22,16 @@ class ConnectWhatsapp:
         self.token = token
         self.token_type = token_type
         self.app_object = app_object
+
+        if self.token_type == "access_code":
+            self.access_token_json = self.exchange_code_for_token()
+            self.get_access_token = self.access_token_json.get("access_token")
+        elif self.token_type == "access_token":
+            self.get_access_token = token
+            self.access_token_json = {
+                'access_token': self.get_access_token,
+                'token_type': 'bearer'
+            }
     
     def exchange_code_for_token(self):
         url = "https://graph.facebook.com/v23.0/oauth/access_token"
@@ -34,73 +44,56 @@ class ConnectWhatsapp:
         }
         response = requests.get(url, params=params)
         token_data = response.json()
-        print("token_data: ", token_data)
-        access_token = token_data.get("access_token")
-        if not access_token:
+        if not token_data.get("access_token"):
             raise Exception("Token exchange failed")
-        return access_token
-    
-    def get_access_token(self):
-        if self.token_type == "access_code":
-            access_token = self.exchange_code_for_token()
-            return access_token
-        elif self.token_type == "access_token":
-            return self.token
+        return token_data
 
-    def get_user_businesses(self):
-        url = "https://graph.facebook.com/v23.0/me?fields=id,name,accounts,businesses&access_token=" + self.get_access_token()
-        resp = requests.get(url)
-        return resp.json().get("businesses", {}).get("data", [])
-
-    def get_whatsapp_accounts_for_business(self, business_id):
-        url = f"https://graph.facebook.com/v18.0/{business_id}"
-        params = {
-            "fields": "owned_whatsapp_business_accounts",
-            "access_token": self.get_access_token()
-        }
-        resp = requests.get(url, params=params)
-        return resp.json()
-
-    # def get_own_whatsapp_accounts_for_business(self):
-    #     url = "https://graph.facebook.com/v23.0/me?fields=businesses{owned_whatsapp_business_accounts}&access_token=" + self.get_access_token()
-    #     resp = requests.get(url)
-    #     return resp.json().get("businesses", {}).get("data", [])
+    def get_information_for_business(self):
+        try:
+            url = "https://graph.facebook.com/v23.0/me?fields=businesses{owned_whatsapp_business_accounts}&access_token=" + self.get_access_token
+            resp = requests.get(url)
+            return resp.json().get("businesses", {}).get("data", [])[0]
+        except Exception as e:
+            raise Exception(str(e))
     
     def get_phone_numbers(self, waba_id):
         url = f"https://graph.facebook.com/v18.0/{waba_id}/phone_numbers"
-        params = {"access_token": self.get_access_token()}
+        params = {"access_token": self.get_access_token}
         resp = requests.get(url, params=params)
-        return resp.json().get("data", [])
+        data = resp.json().get("data", [])
+        if not data:
+            raise Exception("No phone number found")
+        return data[0]
 
     def connected(self):
-        businesses = self.get_user_businesses()
-        if not businesses:
-            raise Exception("No business information found")
-        print("businesses: ", businesses)
-        business = businesses[0]
-        business_id = business["id"]
+        information_for_business = self.get_information_for_business()
+        business_id = information_for_business.get("id")
+        waba_data = information_for_business.get("owned_whatsapp_business_accounts", {}).get("data", [])[0]
 
-        waba_data = self.get_whatsapp_accounts_for_business(business_id)
-        if not waba_data:
-            raise Exception("No Whatsapp business accont found")
-        print("waba_data: ", waba_data)
-
-        # get_own_whatsapp_accounts_for_business = self.get_own_whatsapp_accounts_for_business()
-
-        waba_id = waba_data.get("owned_whatsapp_business_accounts", {}).get("data", [])[0].get("id")
-        waba_name = waba_data.get("owned_whatsapp_business_accounts", {}).get("data", [])[0].get("name")
-
+        waba_id = waba_data.get("id")
+        waba_name = waba_data.get("name")
         phones = self.get_phone_numbers(waba_id)
-        if not phones:
-            raise Exception("No phone number found")
-        print("phones: ", phones)
-        phone_number = phones[0].get("display_phone_number")
-        phone_number_id = phones[0].get("id")
-        to_number = "+8801533125837"
+        # {
+        #     'verified_name': 'Test Number',
+        #     'code_verification_status': 'NOT_VERIFIED',
+        #     'display_phone_number': '15551547561',
+        #     'quality_rating': 'GREEN',
+        #     'platform_type': 'CLOUD_API',
+        #     'throughput': {'level': 'STANDARD'},
+        #     'webhook_configuration': {'application': 'https://s3x54djx-8080.inc1.devtunnels.ms/webhook/whatsapp/'},
+        #     'id': '907695169103284'
+        # }
+        
+        phone_number = phones.get("display_phone_number")
+        phone_number_id = phones.get("id")
+
+        # to_number = "+8801533125837"
         return {
             "status": "connected",
             "business_id": business_id,
             "waba_id": waba_id,
             "waba_name": waba_name,
-            "phones": phone_number
+            "phone_number_id": phone_number_id,
+            "phones": phone_number,
+            "access_token_json": self.access_token_json
         }
