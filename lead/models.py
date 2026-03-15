@@ -4,8 +4,8 @@ from django.db import models
 import uuid
 
 class Lead(BaseModel):
-    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="lead", blank=True, null=True)
-    whatsapp_account = models.ForeignKey('integration.WhatsAppAccount', on_delete=models.SET_NULL, related_name="lead", blank=True, null=True)
+    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="lead", blank=True, null=True, editable=False)
+    whatsapp_account = models.ForeignKey('integration.WhatsAppAccount', on_delete=models.SET_NULL, related_name="lead", blank=True, null=True, editable=False)
     name = models.CharField(max_length=255, null=True, blank=True)
     phone_number = models.CharField(max_length=20)
     profile_pic = models.URLField(null=True, blank=True)
@@ -20,9 +20,9 @@ class Lead(BaseModel):
         ]
 
 class Conversation(BaseModel):
-    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="conversations", blank=True, null=True)
-    whatsapp_account = models.ForeignKey('integration.WhatsAppAccount', on_delete=models.SET_NULL, related_name="conversations", blank=True, null=True)
-    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="conversations")
+    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="conversations", blank=True, null=True, editable=False)
+    whatsapp_account = models.ForeignKey('integration.WhatsAppAccount', on_delete=models.SET_NULL, related_name="conversations", blank=True, null=True, editable=False)
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="conversations", editable=False)
     last_message = models.TextField(null=True, blank=True)
     last_message_at = models.DateTimeField(null=True, blank=True)
     closed_at = models.DateTimeField(null=True, blank=True)
@@ -42,11 +42,10 @@ class AgentAssignment(models.Model):
     status = models.CharField(max_length=20, default="active")
 
 class Message(BaseModel):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="messages", blank=True, null=True)
-    whatsapp_account = models.ForeignKey('integration.WhatsAppAccount', on_delete=models.SET_NULL, related_name="messages", blank=True, null=True)
-    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="messages")
-    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
+    business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="messages", blank=True, null=True, editable=False)
+    whatsapp_account = models.ForeignKey('integration.WhatsAppAccount', on_delete=models.SET_NULL, related_name="messages", blank=True, null=True, editable=False)
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="messages", editable=False)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, editable=False)
 
     direction = models.CharField(max_length=20, choices=MESSAGE_DIRECTION.choices)
     message_type = models.CharField(max_length=50, choices=MESSAGE_TYPE.choices, default=MESSAGE_TYPE.TEXT)
@@ -58,6 +57,10 @@ class Message(BaseModel):
     status = models.CharField(max_length=50, choices=MESSAGE_STATUS.choices, default=MESSAGE_STATUS.SENT)
     error_message = models.TextField(null=True, blank=True)
     timestamp = models.DateTimeField(db_index=True)
+    read = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        return super().save(*args, **kwargs)
 
     class Meta:
         ordering = ["-timestamp"]

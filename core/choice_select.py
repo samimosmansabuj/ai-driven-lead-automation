@@ -86,6 +86,7 @@ class MESSAGE_TYPE(models.TextChoices):
 
 class MESSAGE_STATUS(models.TextChoices):
     SENT = "Sent"
+    RECEIVED = "Received"
     DELIVERED = "Delivered"
     READ = "Read"
     FAILED = "Failed"
@@ -98,6 +99,8 @@ class ACTIVITY_LOG_ACTION_TYPE(models.TextChoices):
     DELETE = "Delete"
     LOGIN = "Login"
     LOGOUT = "Logout"
+    CONNECTED = "CONNECTED"
+    DISCONNECTED = "DISCONNECTED"
 
 class NOTIFICATION_TYPE(models.TextChoices):
     NEW_MESSAGE = "New_Message"

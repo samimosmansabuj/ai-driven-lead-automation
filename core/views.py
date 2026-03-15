@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from rest_framework.views import View
 from django.views import View as django_view
 import json
+from notify.service import WebhookLogModule
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 import urllib.parse
@@ -166,7 +167,8 @@ class WebhookWhatsapp(View):
     def post(self, request, *args, **kwagrs):
         try:
             payload = json.loads(request.body) or request.data
-            print("Incoming WhatsApp payload:", payload)
+            webhook_module = WebhookLogModule(payload)
+            webhook_module.make_response()
             return JsonResponse({"status": "EVENT_RECEIVED"})
         except Exception as e:
             print("Webhook error:", str(e))
@@ -174,44 +176,44 @@ class WebhookWhatsapp(View):
 
 class WebhookWhatsappTest(View):
     def get(self, request, *args, **kwargs):
-        data = {
-            'object': 'whatsapp_business_account',
-            'entry': [
-                {
-                    'id': '1920986648501972',
-                    'changes': [
-                        {
-                            'value': {
-                                'messaging_product': 'whatsapp',
-                                'metadata': {
-                                    'display_phone_number': '15551547561',
-                                    'phone_number_id': '907695169103284'
-                                },
-                                'contacts': [
-                                    {
-                                        'profile': {
-                                            'name': 'Earniko BD'
-                                        },
-                                        'wa_id': '8801533125837'
-                                    }
-                                ],
-                                'messages': [
-                                    {
-                                        'from': '8801533125837',
-                                        'id': 'wamid.HBgNODgwMTUzMzEyNTgzNxUCABIYIEFDOTE3NDVBNjhDRUM5QUY2MzhDRTg4MTVDQjFEN0NBAA==',
-                                        'timestamp': '1771099060',
-                                        'text': {
-                                            'body': 'Hi'
-                                        },
-                                        'type': 'text'
-                                    }
-                                ]
-                            }, 'field': 'messages'
-                        }
-                    ]
-                }
-            ]
-        }
+        # data = {
+        #     'object': 'whatsapp_business_account',
+        #     'entry': [
+        #         {
+        #             'id': '1920986648501972',
+        #             'changes': [
+        #                 {
+        #                     'value': {
+        #                         'messaging_product': 'whatsapp',
+        #                         'metadata': {
+        #                             'display_phone_number': '15551547561',
+        #                             'phone_number_id': '907695169103284'
+        #                         },
+        #                         'contacts': [
+        #                             {
+        #                                 'profile': {
+        #                                     'name': 'Earniko BD'
+        #                                 },
+        #                                 'wa_id': '8801533125837'
+        #                             }
+        #                         ],
+        #                         'messages': [
+        #                             {
+        #                                 'from': '8801533125837',
+        #                                 'id': 'wamid.HBgNODgwMTUzMzEyNTgzNxUCABIYIEFDOTE3NDVBNjhDRUM5QUY2MzhDRTg4MTVDQjFEN0NBAA==',
+        #                                 'timestamp': '1771099060',
+        #                                 'text': {
+        #                                     'body': 'Hi'
+        #                                 },
+        #                                 'type': 'text'
+        #                             }
+        #                         ]
+        #                     }, 'field': 'messages'
+        #                 }
+        #             ]
+        #         }
+        #     ]
+        # }
         return JsonResponse(
             {
                 "success": True,
@@ -222,3 +224,4 @@ class WebhookWhatsappTest(View):
 class PrivacyPolicyView(django_view):
     def get(self, request):
         return render(request, "privacy-policy.html")
+

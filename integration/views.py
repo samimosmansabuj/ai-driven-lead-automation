@@ -7,9 +7,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 import urllib.parse
-from core.choice_select import APP_TITLE
+from core.choice_select import APP_TITLE, ACTIVITY_LOG_ACTION_TYPE
 from .service import ConnectedAppWithToken
 from django.db import transaction
+from core.utils import UpdateReadOnlyModelViewSet
+from notify.service import LogActivityModule
 
 
 class AppViewSet(UpdateModelViewSet):
@@ -22,7 +24,7 @@ class AppViewSet(UpdateModelViewSet):
         app_object = self.get_object()
         user = request.user
         business = user.business.first()
-        if business.whatsapp_account:
+        if business.whatsapp_account.first():
             return Response(
                 {
                     "success": False,
@@ -74,6 +76,9 @@ class AppViewSet(UpdateModelViewSet):
                             display_phone_number=connect_response.get("phones"),
                             access_token=connect_response.get("access_token_json", {})
                         )
+                        self.create_log(
+                            ACTIVITY_LOG_ACTION_TYPE.CONNECTED, business=business, entity=waba_app
+                        )
                     return Response(
                         {
                             "success": True,
@@ -89,9 +94,99 @@ class AppViewSet(UpdateModelViewSet):
                     }, status=status.HTTP_400_BAD_REQUEST
                 )
     
+    # self.create_log("Request Cancel", entity=order, for_notify=True, user=order_request.provider.user, metadata={"reference_user_id": self.request.user.id, "reference_object_id": order_request.id, "reference_object_type": "OrderRequest"})
+    def create_log(self, action, business=None, entity=None, for_notify=False, user=None, metadata={}):
+        data = {
+            "user": user or self.request.user,
+            "business": business,
+            "action": action,
+            "entity": entity,
+            "request": self.request,
+            "for_notify": for_notify,
+            "metadata": metadata,
+        }
+        log = LogActivityModule(data)
+        log.create()
+    
 
 class WhatsAppAccountViewSet(ModelViewSet):
     serializer_class = WhatsAppAccountSerializer
     permission_classes = [IsAuthenticated]
     queryset = WhatsAppAccount.objects.all()
+
+    def get_business(self):
+        user = self.request.user
+        business = user.business.first()
+        return business
+    
+    def get_queryset(self):
+        business = self.get_business()
+        return WhatsAppAccount.objects.filter(business=business)
+    
+    def list(self, request, *args, **kwargs):
+        try:
+            response = super().list(request, *args, **kwargs)
+            return Response(
+                {
+                    'success': True,
+                    'data': response.data
+                }, status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {
+                    'success': False,
+                    'messgae': str(e),
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return self.perform_retrieve(serializer)
+    
+    def perform_retrieve(self, serializer):
+        return Response(
+            {
+                'success': True,
+                'data': serializer.data
+            }, status=status.HTTP_200_OK
+        )
+
+    @action(detail=True, methods=["post"], url_path="discounnect")
+    def get_discounnect(self, request, *args, **kwargs):
+        try:
+            with transaction.atomic():
+                whatsapp_account = self.get_object()
+                self.create_log(
+                    ACTIVITY_LOG_ACTION_TYPE.DISCONNECTED, business=whatsapp_account.business, entity=whatsapp_account
+                )
+                return Response(
+                    {
+                        "success": True,
+                        "message": "Discounnected your whatsapp account!"
+                    }, status=status.HTTP_200_OK
+                )
+        except Exception as e:
+            return Response(
+                {
+                    "success": False,
+                    "message": str(e)
+                }, status=status.HTTP_400_BAD_REQUEST
+            )
+
+    # self.create_log("Request Cancel", entity=order, for_notify=True, user=order_request.provider.user, metadata={"reference_user_id": self.request.user.id, "reference_object_id": order_request.id, "reference_object_type": "OrderRequest"})
+    def create_log(self, action, business=None, entity=None, for_notify=False, user=None, metadata={}):
+        data = {
+            "user": user or self.request.user,
+            "business": business,
+            "action": action,
+            "entity": entity,
+            "request": self.request,
+            "for_notify": for_notify,
+            "metadata": metadata,
+        }
+        log = LogActivityModule(data)
+        log.create()
+
 

@@ -114,7 +114,7 @@ class UpdateReadOnlyModelViewSet(ReadOnlyModelViewSet):
     def perform_retrieve(self, serializer):
         return Response(
             {
-                'status': True,
+                'success': True,
                 'data': serializer.data
             }, status=status.HTTP_200_OK
         )
@@ -124,7 +124,7 @@ class UpdateReadOnlyModelViewSet(ReadOnlyModelViewSet):
             response = super().list(request, *args, **kwargs)
             return Response(
                 {
-                    'status': True,
+                    'success': True,
                     'count': len(response.data),
                     'data': response.data
                 }, status=status.HTTP_200_OK
@@ -132,7 +132,7 @@ class UpdateReadOnlyModelViewSet(ReadOnlyModelViewSet):
         except Exception as e:
             return Response(
                 {
-                    'status': False,
+                    'success': False,
                     'messgae': str(e),
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
