@@ -8,6 +8,8 @@ from integration.models import WhatsAppAccount
 from lead.models import Lead, Conversation, Message
 from core.choice_select import CONVERSATION_STATUS, MESSAGE_DIRECTION, MESSAGE_TYPE, MESSAGE_STATUS
 from datetime import datetime, timezone
+import random
+import requests
 
 class LogActivityModule:
     def get_confirm_data(self, field, field_name):
@@ -75,15 +77,15 @@ class WebhookLogModule:
         self.payload = payload
         self.phone_number_id = self.get_phone_number_id()
 
-        print("self.payload: ", self.payload)
-        print("phone number id: ", self.phone_number_id)
-        print("wpba id: ", self.get_waba_id())
+        # print("self.payload: ", self.payload)
+        # print("phone number id: ", self.phone_number_id)
+        # print("wpba id: ", self.get_waba_id())
 
         self.waba = WhatsAppAccount.objects.filter(phone_number_id=self.phone_number_id, waba_id=self.get_waba_id()).first()
-        print("self.waba: ", self.waba)
+        # print("self.waba: ", self.waba)
 
         self.business = self.waba.business if self.waba else None
-        print("self.business: ", self.business)
+        # print("self.business: ", self.business)
 
         self.create_log()
 
@@ -147,7 +149,55 @@ class WebhookLogModule:
             timestamp=timestamp
         )
         return msge
-        
+    
+    def send_ai(self, received_message):
+        # send message and business information to AI 
+        next_message_id = received_message.id + 1
+        send_message_data = {
+            "business": received_message.business,
+            "whatsapp_account": received_message.whatsapp_account,
+            "lead": received_message.lead,
+            "conversation": received_message.conversation,
+            "direction": MESSAGE_DIRECTION.OUTGOING,
+            "content": f"Reply Messgage content ({next_message_id})",
+            "status": MESSAGE_STATUS.SENT,
+        }
+        send_message = Message.objects.create(
+            # **send_message_data
+            business = received_message.business,
+            whatsapp_account = received_message.whatsapp_account,
+            lead = received_message.lead,
+            conversation = received_message.conversation,
+            direction = MESSAGE_DIRECTION.OUTGOING,
+            content = f"Reply Messgage content ({next_message_id})",
+            status = MESSAGE_STATUS.SENT,
+        )
+        return send_message
+
+    def send_message_to_whatsapp(self, send_message):
+        lead = send_message.lead
+        whatsapp_account = send_message.whatsapp_account
+        access_token_dict = whatsapp_account.access_token
+        content = send_message.content
+
+        url = f"https://graph.facebook.com/v18.0/{whatsapp_account.phone_number_id}/messages"
+        headers = {
+            "Authorization": f"Bearer {access_token_dict.get("access_token")}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": lead.phone_number,
+            "type": "text",
+            "text": {
+                "body": content
+            }
+        }
+
+        response = requests.post(url, json=payload, headers=headers)
+        data = response.json()
+        print("data: ", data)
+        return data
 
     def make_response(self):
         try:
@@ -163,8 +213,13 @@ class WebhookLogModule:
                     conversation.last_message_at = message.created_at
                     lead.save()
                     conversation.save()
-                    # send message and business information to AI 
 
+                    # send message and business information to AI 
+                    send_message = self.send_ai(self, message)
+                    print("send_message: ", send_message)
+                    self.send_message_to_whatsapp(send_message)
+
+                    # send message to client 
                     return True
         except Exception as e:
             return False
