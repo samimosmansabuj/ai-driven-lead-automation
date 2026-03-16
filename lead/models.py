@@ -2,6 +2,7 @@ from core.models import BaseModel
 from core.choice_select import MESSAGE_DIRECTION, MESSAGE_TYPE, MESSAGE_STATUS, CONVERSATION_STATUS, CONVERSATION_SOURCE
 from django.db import models
 import uuid
+from django.utils import timezone
 
 class Lead(BaseModel):
     business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="lead", blank=True, null=True, editable=False)
@@ -42,6 +43,7 @@ class AgentAssignment(models.Model):
     status = models.CharField(max_length=20, default="active")
 
 class Message(BaseModel):
+    system_id = models.CharField(max_length=500, blank=True, null=True)
     business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="messages", blank=True, null=True, editable=False)
     whatsapp_account = models.ForeignKey('integration.WhatsAppAccount', on_delete=models.SET_NULL, related_name="messages", blank=True, null=True, editable=False)
     lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="messages", editable=False)
@@ -49,23 +51,25 @@ class Message(BaseModel):
 
     direction = models.CharField(max_length=20, choices=MESSAGE_DIRECTION.choices)
     message_type = models.CharField(max_length=50, choices=MESSAGE_TYPE.choices, default=MESSAGE_TYPE.TEXT)
-
+    
     content = models.TextField(null=True, blank=True)
     file = models.FileField(upload_to='messages/', null=True, blank=True)
 
-    meta_message_id = models.CharField(max_length=255, null=True, blank=True)
     status = models.CharField(max_length=50, choices=MESSAGE_STATUS.choices, default=MESSAGE_STATUS.SENT)
     error_message = models.TextField(null=True, blank=True)
-    timestamp = models.DateTimeField(db_index=True)
+    timestamp = models.DateTimeField(default=timezone.now, db_index=True)
     read = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
+        if self.status == MESSAGE_STATUS.READ:
+            self.read = True
         return super().save(*args, **kwargs)
 
     class Meta:
-        ordering = ["-timestamp"]
+        ordering = ["-id"]
+        # ordering = ["-timestamp"]
         indexes = [
-            models.Index(fields=['meta_message_id']),
+            models.Index(fields=['system_id']),
             models.Index(fields=['conversation', 'timestamp']),
             models.Index(fields=['business', 'timestamp']),
             models.Index(fields=['lead']),

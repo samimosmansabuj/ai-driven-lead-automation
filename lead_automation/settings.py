@@ -27,7 +27,7 @@ INSTALLED_APPS = [
     # library app
     'rest_framework', 'rest_framework_simplejwt',
     'corsheaders', 'django_extensions', 'django_filters',
-    'rest_framework_simplejwt.token_blacklist', 'django_json_widget',
+    'rest_framework_simplejwt.token_blacklist', 'django_json_widget', 'django_celery_results',
 
     # custom app
     'account', 'billing', 'business', 'core', 'integration', 'lead', 'automation', 'notify',
@@ -147,6 +147,18 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
+
+
+# ==========================================================================================
+# =================Celery & Redis Config Start================================
+CELERY_BROKER_URL = "redis://127.0.0.1:6380/0"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+
+CELERY_RESULT_BACKEND = "django-db"
+
+# =================Celery & Redis Config End================================
+# ==========================================================================================
 
 
 # ==========================================================================================

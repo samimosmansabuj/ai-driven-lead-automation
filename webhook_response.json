@@ -32,3 +32,30 @@
         }
     ]
 }
+// Status webhook payload:  
+{
+    'object': 'whatsapp_business_account', 'entry': [
+        {'id': '1920986648501972', 'changes': [
+                {
+                    'value': {
+                        'messaging_product': 'whatsapp',
+                        'metadata': {
+                            'display_phone_number': '15551547561', 'phone_number_id': '907695169103284'
+                        },
+                        'statuses': [
+                            {
+                                'id': 'wamid.HBgNODgwMTUzMzEyNTgzNxUCABEYEkFCQ0IxMjgwOENEMkZBN0UzNwA=',
+                                'status': 'sent',
+                                'timestamp': '1773683369',
+                                'recipient_id': '8801533125837',
+                                'pricing': {
+                                    'billable': False, 'pricing_model': 'PMP', 'category': 'service', 'type': 'free_customer_service'
+                                }
+                            }
+                        ]
+                    }, 'field': 'messages'
+                }
+            ]
+        }
+    ]
+}

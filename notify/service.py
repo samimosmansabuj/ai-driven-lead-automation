@@ -10,6 +10,8 @@ from core.choice_select import CONVERSATION_STATUS, MESSAGE_DIRECTION, MESSAGE_T
 from datetime import datetime, timezone
 import random
 import requests
+from django.utils import timezone
+
 
 class LogActivityModule:
     def get_confirm_data(self, field, field_name):
@@ -73,24 +75,17 @@ class LogActivityModule:
 
 
 class WebhookLogModule:
-    def __init__(self, payload: dict):
+    def __init__(self, payload: dict, webhook_log: object = None):
         self.payload = payload
+        self.value = payload["entry"][0]["changes"][0]["value"]
+
         self.phone_number_id = self.get_phone_number_id()
-
-        # print("self.payload: ", self.payload)
-        # print("phone number id: ", self.phone_number_id)
-        # print("wpba id: ", self.get_waba_id())
-
         self.waba = WhatsAppAccount.objects.filter(phone_number_id=self.phone_number_id, waba_id=self.get_waba_id()).first()
-        # print("self.waba: ", self.waba)
 
         self.business = self.waba.business if self.waba else None
-        # print("self.business: ", self.business)
-
-        self.create_log()
-
-        self.contact = payload["entry"][0]["changes"][0]["value"]["contacts"][0]
-        self.message = payload["entry"][0]["changes"][0]["value"]["messages"][0]
+        
+        self.webhook_log = webhook_log
+        print("received webhook response from meta!")
     
     def get_lead(self):
         name = self.contact["profile"]["name"]
@@ -120,22 +115,14 @@ class WebhookLogModule:
     def get_waba_id(self):
         return self.payload["entry"][0]["id"]
 
-    def create_log(self):
-        webhook_log = WebhookLog.objects.create(
-            business=self.business,
-            payload=self.payload,
-            event_type="whatsapp_message",
-            processed=False
-        )
-        self.webhook_log = webhook_log
-        return webhook_log
-
-    def create_message(self, lead, conversation, ):
+    def create_message(self, lead, conversation):
         message_type = self.message["type"].upper()
-        message_id = self.message["id"]
         timestamp = datetime.fromtimestamp(int(self.message["timestamp"]))
         text = self.message["text"]["body"]
+        mssage_system_id = self.message["id"]
+
         message_type =  message_type if message_type in MESSAGE_STATUS.choices else MESSAGE_TYPE.TEXT
+
         msge = Message.objects.create(
             business=self.business,
             whatsapp_account=self.waba,
@@ -144,15 +131,14 @@ class WebhookLogModule:
             direction=MESSAGE_DIRECTION.INCOMING,
             message_type=message_type,
             content=text,
-            meta_message_id=message_id,
             status=MESSAGE_STATUS.RECEIVED,
-            timestamp=timestamp
+            timestamp=timestamp,
+            system_id=mssage_system_id
         )
         return msge
     
     def send_ai(self, received_message):
-        # send message and business information to AI 
-        next_message_id = received_message.id + 1
+        next_message_id = Message.objects.count() + 1
         send_message_data = {
             "business": received_message.business,
             "whatsapp_account": received_message.whatsapp_account,
@@ -160,51 +146,52 @@ class WebhookLogModule:
             "conversation": received_message.conversation,
             "direction": MESSAGE_DIRECTION.OUTGOING,
             "content": f"Reply Messgage content ({next_message_id})",
-            "status": MESSAGE_STATUS.SENT,
+            "status": MESSAGE_STATUS.SENT
         }
         send_message = Message.objects.create(
-            # **send_message_data
-            business = received_message.business,
-            whatsapp_account = received_message.whatsapp_account,
-            lead = received_message.lead,
-            conversation = received_message.conversation,
-            direction = MESSAGE_DIRECTION.OUTGOING,
-            content = f"Reply Messgage content ({next_message_id})",
-            status = MESSAGE_STATUS.SENT,
+            **send_message_data
         )
         return send_message
 
     def send_message_to_whatsapp(self, send_message):
-        lead = send_message.lead
-        whatsapp_account = send_message.whatsapp_account
-        access_token_dict = whatsapp_account.access_token
-        content = send_message.content
+        from .tasks import send_whatsapp_message_tasks
+        send_whatsapp_message_tasks.delay(send_message.id)
+        # lead = send_message.lead
+        # whatsapp_account = send_message.whatsapp_account
+        # access_token_dict = whatsapp_account.access_token
+        # content = send_message.content
 
-        url = f"https://graph.facebook.com/v18.0/{whatsapp_account.phone_number_id}/messages"
-        headers = {
-            "Authorization": f"Bearer {access_token_dict.get("access_token")}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "messaging_product": "whatsapp",
-            "to": lead.phone_number,
-            "type": "text",
-            "text": {
-                "body": content
-            }
-        }
+        # url = f"https://graph.facebook.com/v18.0/{whatsapp_account.phone_number_id}/messages"
+        # headers = {
+        #     "Authorization": f"Bearer {access_token_dict.get('access_token')}",
+        #     "Content-Type": "application/json"
+        # }
+        # payload = {
+        #     "messaging_product": "whatsapp",
+        #     "to": lead.phone_number,
+        #     "type": "text",
+        #     "text": {
+        #         "body": content
+        #     }
+        # }
 
-        response = requests.post(url, json=payload, headers=headers)
-        data = response.json()
-        print("data: ", data)
-        return data
+        # response = requests.post(url, json=payload, headers=headers)
+        # data = response.json()
 
-    def make_response(self):
+        # if "messages" in data:
+        #     meta_id = data["messages"][0]["id"]
+        #     send_message.system_id = meta_id
+        #     send_message.save()
+
+        # return data
+
+    def handle_message(self):
         try:
             if self.business and self.waba:
-                self.webhook_log.processed = True
-                self.webhook_log.save()
                 with transaction.atomic():
+                    self.contact = self.value["contacts"][0]
+                    self.message = self.value["messages"][0]
+
                     lead = self.get_lead()
                     conversation = self.get_conversation(lead)
                     message = self.create_message(lead, conversation)
@@ -214,17 +201,39 @@ class WebhookLogModule:
                     lead.save()
                     conversation.save()
 
-                    # send message and business information to AI 
-                    send_message = self.send_ai(self, message)
-                    print("send_message: ", send_message)
+                    send_message = self.send_ai(message)
                     self.send_message_to_whatsapp(send_message)
 
-                    # send message to client 
-                    return True
+                    self.webhook_log.processed = True
+                    self.webhook_log.business = self.business
+                    self.webhook_log.save()
+                    print("message processed successfully")
         except Exception as e:
-            return False
+            print("message handling error:", e)
 
-        
+    def handle_status(self):
+        try:
+            status_data = self.value["statuses"][0]
+            message_id = status_data["id"]
+            status = status_data["status"]
+
+            status_map = {
+                "sent": MESSAGE_STATUS.SENT,
+                "delivered": MESSAGE_STATUS.DELIVERED,
+                "read": MESSAGE_STATUS.READ,
+                "failed": MESSAGE_STATUS.FAILED
+            }
+
+            Message.objects.filter(system_id=message_id).update(
+                status=status_map.get(status, MESSAGE_STATUS.SENT)
+            )
+            self.webhook_log.processed = True
+            self.webhook_log.save()
+
+            print("status updated:", status_map.get(status, MESSAGE_STATUS.SENT))
+        except Exception as e:
+            print("status handling error:", e)
+
 
     
 
