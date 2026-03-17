@@ -32,6 +32,7 @@ class MessageAdmin(admin.ModelAdmin):
         "direction",
         "message_type",
         "status",
+        "send_by",
         "timestamp",
     )
     list_filter = ("direction", "message_type", "status")

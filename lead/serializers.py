@@ -19,6 +19,10 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = "__all__"
 
+class ConversationMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ["send_by", "message_type", "content", "file", "created_at"]
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:

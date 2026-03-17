@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Business, BusinessHours, BusinessMember
+from .models import Business, BusinessHours, BusinessMember, BusinessInformationForAI
 
 
 @admin.register(Business)
@@ -20,3 +20,5 @@ class BusinessMemberAdmin(admin.ModelAdmin):
     list_display = ("id", "business", "user__email", "role", "status")
     search_fields = ("user__email",)
     list_filter = ("role", "status")
+
+admin.site.register(BusinessInformationForAI)

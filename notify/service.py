@@ -6,11 +6,12 @@ from django.contrib.contenttypes.models import ContentType
 from .models import ActivityLog, WebhookLog
 from integration.models import WhatsAppAccount
 from lead.models import Lead, Conversation, Message
-from core.choice_select import CONVERSATION_STATUS, MESSAGE_DIRECTION, MESSAGE_TYPE, MESSAGE_STATUS
+from core.choice_select import CONVERSATION_STATUS, MESSAGE_DIRECTION, MESSAGE_TYPE, MESSAGE_STATUS, SEND_BY
 from datetime import datetime, timezone
 import random
 import requests
 from django.utils import timezone
+from lead.serializers import ConversationMessageSerializer
 
 
 class LogActivityModule:
@@ -133,11 +134,60 @@ class WebhookLogModule:
             content=text,
             status=MESSAGE_STATUS.RECEIVED,
             timestamp=timestamp,
-            system_id=mssage_system_id
+            system_id=mssage_system_id,
+            send_by=SEND_BY.CLIENT
         )
         return msge
     
+    def get_whole_conversation(self, conversation):
+        messages = conversation.messages.all()
+        business = conversation.business
+        business_information = business.business_information_for_ai
+
+        conversation_history = messages
+        # for msg in reversed(messages):
+        #     role = "Customer" if msg.direction == "incoming" else "Assistant"
+        #     conversation_history += f"{role}: {msg.text}\n"
+
+        prompt = f"""
+        You are a helpful customer support assistant for this business.
+
+        Business Information:
+        Name: {business.name}
+        Description: {business.description}
+        Services: {business_information.service}
+        Industry: {business_information.industry}
+        Business Details: {business_information.business_details}
+        Product Details: {business_information.product_details}
+        Service Details: {business_information.service_details}
+        Location: {business.location}
+
+        # - product inquiry
+        # - support request
+        # - pricing
+        # - greeting
+
+        Instructions:
+        - Reply like a friendly human support agent
+        - Keep answers short and helpful
+        - If the user asks about services, explain clearly
+        - If you don't know the answer, ask the user for more details
+        - Always be polite
+
+        Conversation History:
+        {conversation_history}
+
+        User Message:
+        {self.message["text"]["body"]}
+
+        Write the best reply for the customer.
+        """
+        print("prompt: ", prompt)
+        serializer = ConversationMessageSerializer(messages, many=True)
+        print("conversation data: ", serializer.data)
+    
     def send_ai(self, received_message):
+        conversation_message = self.get_whole_conversation(received_message.conversation)
         next_message_id = Message.objects.count() + 1
         send_message_data = {
             "business": received_message.business,
@@ -154,36 +204,36 @@ class WebhookLogModule:
         return send_message
 
     def send_message_to_whatsapp(self, send_message):
-        from .tasks import send_whatsapp_message_tasks
-        send_whatsapp_message_tasks.delay(send_message.id)
-        # lead = send_message.lead
-        # whatsapp_account = send_message.whatsapp_account
-        # access_token_dict = whatsapp_account.access_token
-        # content = send_message.content
+        # from .tasks import send_whatsapp_message_tasks
+        # send_whatsapp_message_tasks.delay(send_message.id)
+        lead = send_message.lead
+        whatsapp_account = send_message.whatsapp_account
+        access_token_dict = whatsapp_account.access_token
+        content = send_message.content
 
-        # url = f"https://graph.facebook.com/v18.0/{whatsapp_account.phone_number_id}/messages"
-        # headers = {
-        #     "Authorization": f"Bearer {access_token_dict.get('access_token')}",
-        #     "Content-Type": "application/json"
-        # }
-        # payload = {
-        #     "messaging_product": "whatsapp",
-        #     "to": lead.phone_number,
-        #     "type": "text",
-        #     "text": {
-        #         "body": content
-        #     }
-        # }
+        url = f"https://graph.facebook.com/v18.0/{whatsapp_account.phone_number_id}/messages"
+        headers = {
+            "Authorization": f"Bearer {access_token_dict.get('access_token')}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": lead.phone_number,
+            "type": "text",
+            "text": {
+                "body": content
+            }
+        }
 
-        # response = requests.post(url, json=payload, headers=headers)
-        # data = response.json()
+        response = requests.post(url, json=payload, headers=headers)
+        data = response.json()
 
-        # if "messages" in data:
-        #     meta_id = data["messages"][0]["id"]
-        #     send_message.system_id = meta_id
-        #     send_message.save()
+        if "messages" in data:
+            meta_id = data["messages"][0]["id"]
+            send_message.system_id = meta_id
+            send_message.save()
 
-        # return data
+        return data
 
     def handle_message(self):
         try:

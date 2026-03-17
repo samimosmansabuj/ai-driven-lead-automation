@@ -12,3 +12,4 @@ class WebhookLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = WebhookLog
         fields = "__all__"
+

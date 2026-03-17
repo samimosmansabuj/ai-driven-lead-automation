@@ -78,6 +78,12 @@ class MESSAGE_TYPE(models.TextChoices):
     VIDEO = "Video"
     FILE = "File"
 
+class SEND_BY(models.TextChoices):
+    AI = "AI"
+    AGENT = "AGENT"
+    CLIENT = "CLIENT"
+    
+
 # class MEDIA_TYPE(models.TextChoices):
 #     PDF = "PDF"
 #     IMAGE = "Image"

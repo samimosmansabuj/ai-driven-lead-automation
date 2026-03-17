@@ -16,6 +16,16 @@ class Business(BaseModel):
     status = models.CharField(max_length=20, choices=BUSINESS_STATUS.choices, default=BUSINESS_STATUS.ACTIVE)
     timezone = models.CharField(max_length=100, default='UTC')
 
+class BusinessInformationForAI(BaseModel):
+    business = models.OneToOneField(Business, on_delete=models.CASCADE, related_name="business_information_for_ai")
+    industry = models.CharField(max_length=255, blank=True, null=True)
+    service = models.CharField(max_length=255, blank=True, null=True)
+    website = models.URLField(max_length=500, blank=True, null=True)
+    business_details = models.TextField(blank=True, null=True)
+    product_details = models.TextField(blank=True, null=True)
+    service_details = models.TextField(blank=True, null=True)
+
+
 class BusinessHours(BaseModel):
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="business_hour")
     day = models.IntegerField(choices=BUSINESS_DAY.choices)

@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import requests
 from notify.models import WebhookLog
-from notify.tasks import process_webhook
+# from notify.tasks import process_webhook
 
 class HomePage(View):
     def get(self, request):
@@ -176,7 +176,13 @@ class WebhookWhatsapp(View):
                 event_type="whatsapp_message",
                 processed=False
             )
-            process_webhook.delay(webhook_log.id)
+            # process_webhook.delay(webhook_log.id)
+            module = WebhookLogModule(payload, webhook_log)
+            value = payload["entry"][0]["changes"][0]["value"]
+            if "messages" in value:
+                module.handle_message()
+            elif "statuses" in value:
+                module.handle_status()
             return JsonResponse({"status": "EVENT_RECEIVED"})
         except Exception as e:
             print("Webhook error:", str(e))

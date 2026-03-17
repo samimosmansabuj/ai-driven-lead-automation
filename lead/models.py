@@ -1,5 +1,5 @@
 from core.models import BaseModel
-from core.choice_select import MESSAGE_DIRECTION, MESSAGE_TYPE, MESSAGE_STATUS, CONVERSATION_STATUS, CONVERSATION_SOURCE
+from core.choice_select import MESSAGE_DIRECTION, MESSAGE_TYPE, MESSAGE_STATUS, CONVERSATION_STATUS, CONVERSATION_SOURCE, SEND_BY
 from django.db import models
 import uuid
 from django.utils import timezone
@@ -47,7 +47,8 @@ class Message(BaseModel):
     business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="messages", blank=True, null=True, editable=False)
     whatsapp_account = models.ForeignKey('integration.WhatsAppAccount', on_delete=models.SET_NULL, related_name="messages", blank=True, null=True, editable=False)
     lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name="messages", editable=False)
-    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, editable=False)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="messages", editable=False)
+    send_by = models.CharField(max_length=50, choices=SEND_BY.choices, default=SEND_BY.AI)
 
     direction = models.CharField(max_length=20, choices=MESSAGE_DIRECTION.choices)
     message_type = models.CharField(max_length=50, choices=MESSAGE_TYPE.choices, default=MESSAGE_TYPE.TEXT)
