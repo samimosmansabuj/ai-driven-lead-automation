@@ -2,7 +2,7 @@ from django.db import models
 from core.models import BaseModel
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-from core.choice_select import ACTIVITY_LOG_ACTION_TYPE, NOTIFICATION_TYPE
+from core.choice_select import ACTIVITY_LOG_ACTION_TYPE, NOTIFICATION_TYPE, WEBHOOK_ACTION
 
 class ActivityLog(BaseModel):
     user = models.ForeignKey("account.User", on_delete=models.SET_NULL, null=True)
@@ -28,6 +28,7 @@ class WebhookLog(BaseModel):
     business = models.ForeignKey('business.Business', on_delete=models.SET_NULL, related_name="webhook_log", null=True, blank=True)
     payload = models.JSONField()
     event_type = models.CharField(max_length=100)
+    action = models.CharField(max_length=30, choices=WEBHOOK_ACTION.choices, default=WEBHOOK_ACTION.MESSAGE, blank=True, null=True)
     processed = models.BooleanField(default=False)
 
 class APILog(BaseModel):

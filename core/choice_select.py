@@ -108,7 +108,19 @@ class ACTIVITY_LOG_ACTION_TYPE(models.TextChoices):
     CONNECTED = "CONNECTED"
     DISCONNECTED = "DISCONNECTED"
 
+class WEBHOOK_ACTION(models.TextChoices):
+    MESSAGE = "MESSAGE"
+    STATUS = "STATUS"
+
 class NOTIFICATION_TYPE(models.TextChoices):
     NEW_MESSAGE = "New_Message"
     SYSTEM = "System_Alert"
     BILLING = "Billing"
+
+
+# Core App-------------------------------
+class AI_MODEL(models.TextChoices):
+    OPENAPI = "OPENAPI"
+    GEMINI = "GEMINI"
+
+

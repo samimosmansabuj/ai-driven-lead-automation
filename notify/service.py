@@ -12,6 +12,7 @@ import random
 import requests
 from django.utils import timezone
 from lead.serializers import ConversationMessageSerializer
+from .ai_service import AIModule
 
 
 class LogActivityModule:
@@ -139,63 +140,19 @@ class WebhookLogModule:
         )
         return msge
     
-    def get_whole_conversation(self, conversation):
-        messages = conversation.messages.all()
-        business = conversation.business
-        business_information = business.business_information_for_ai
-
-        conversation_history = messages
-        # for msg in reversed(messages):
-        #     role = "Customer" if msg.direction == "incoming" else "Assistant"
-        #     conversation_history += f"{role}: {msg.text}\n"
-
-        prompt = f"""
-        You are a helpful customer support assistant for this business.
-
-        Business Information:
-        Name: {business.name}
-        Description: {business.description}
-        Services: {business_information.service}
-        Industry: {business_information.industry}
-        Business Details: {business_information.business_details}
-        Product Details: {business_information.product_details}
-        Service Details: {business_information.service_details}
-        Location: {business.location}
-
-        # - product inquiry
-        # - support request
-        # - pricing
-        # - greeting
-
-        Instructions:
-        - Reply like a friendly human support agent
-        - Keep answers short and helpful
-        - If the user asks about services, explain clearly
-        - If you don't know the answer, ask the user for more details
-        - Always be polite
-
-        Conversation History:
-        {conversation_history}
-
-        User Message:
-        {self.message["text"]["body"]}
-
-        Write the best reply for the customer.
-        """
-        print("prompt: ", prompt)
-        serializer = ConversationMessageSerializer(messages, many=True)
-        print("conversation data: ", serializer.data)
-    
     def send_ai(self, received_message):
-        conversation_message = self.get_whole_conversation(received_message.conversation)
-        next_message_id = Message.objects.count() + 1
+        ai_module = AIModule(received_message)
+        generate_reply = ai_module.generate_reply_with_ai()
+
+        # next_message_id = Message.objects.count() + 1
         send_message_data = {
             "business": received_message.business,
             "whatsapp_account": received_message.whatsapp_account,
             "lead": received_message.lead,
             "conversation": received_message.conversation,
             "direction": MESSAGE_DIRECTION.OUTGOING,
-            "content": f"Reply Messgage content ({next_message_id})",
+            "content": generate_reply,
+            # "content": f"Reply Messgage content ({next_message_id})",
             "status": MESSAGE_STATUS.SENT
         }
         send_message = Message.objects.create(
